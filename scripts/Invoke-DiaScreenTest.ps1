@@ -22,6 +22,9 @@
 param(
     [string]$ProjectPath = (Join-Path $PSScriptRoot "..\PilaJednosuportowaINNER.dpa"),
     [string]$DiaScreenExe = "",
+    # Fail unless DIAScreen.exe has this product version (e.g. "1.8.1.19" -
+    # proves the patch on top of the 1.8 base install was applied).
+    [string]$ExpectedVersion = "",
     [int]$ObserveSeconds = 30,
     [int]$OpenTimeoutSeconds = 300,
     [int]$CompileTimeoutSeconds = 900,
@@ -84,7 +87,11 @@ if (-not $DiaScreenExe) {
 }
 $diaDir = Split-Path $DiaScreenExe -Parent
 $emulatorDir = Join-Path $diaDir "ScrEditApp\Emulator"
-Log "DIAScreen: $DiaScreenExe ($((Get-Item $DiaScreenExe).VersionInfo.ProductVersion))"
+$diaVersion = (Get-Item $DiaScreenExe).VersionInfo.ProductVersion
+Log "DIAScreen: $DiaScreenExe ($diaVersion)"
+if ($ExpectedVersion -and $diaVersion -ne $ExpectedVersion) {
+    throw "DIAScreen.exe is version $diaVersion, expected $ExpectedVersion."
+}
 
 if (-not $env:PROJECT_PASSWORD) {
     Log "WARNING: PROJECT_PASSWORD is not set - a password-protected project cannot be opened."

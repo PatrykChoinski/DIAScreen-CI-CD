@@ -15,9 +15,12 @@ env:
   # Bump together when the installer changes: the asset name must match
   # what is uploaded to the "Installers" GitHub Release exactly (see
   # installers/README.md).
+  # The 1.8.1 installer is only a patch for an existing 1.8 install, so
+  # the base release is installed first.
   DIASCREEN_VERSION: "1.8.1.19"
   INSTALLERS_RELEASE_TAG: "Installers"
-  DIASCREEN_INSTALLER_ASSET: "DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe"
+  DIASCREEN_BASE_ASSET: "DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe"
+  DIASCREEN_PATCH_ASSET: "DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe"
   # How long the On-line Simulation must keep running (emulator alive and
   # responsive) for the smoke test to pass.
   OBSERVE_SECONDS: "30"
@@ -32,18 +35,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download DIAScreen installer
+      - name: Download DIAScreen installers (1.8 base + 1.8.1 patch)
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           New-Item -ItemType Directory -Force -Path installers | Out-Null
-          gh release download "$env:INSTALLERS_RELEASE_TAG" --repo "${{ github.repository }}" `
-            --pattern "$env:DIASCREEN_INSTALLER_ASSET" --dir installers --clobber
+          foreach ($asset in $env:DIASCREEN_BASE_ASSET, $env:DIASCREEN_PATCH_ASSET) {
+            gh release download "$env:INSTALLERS_RELEASE_TAG" --repo "${{ github.repository }}" `
+              --pattern "$asset" --dir installers --clobber
+            if ($LASTEXITCODE -ne 0) { throw "Download of $asset failed" }
+          }
 
-      - name: Install DIAScreen
+      - name: Install DIAScreen 1.8 + 1.8.1 patch
         shell: pwsh
-        run: ./scripts/Install-DIAScreen.ps1 -InstallerPath "installers\$env:DIASCREEN_INSTALLER_ASSET"
+        run: |
+          ./scripts/Install-DIAScreen.ps1 `
+            -BaseInstallerPath "installers\$env:DIASCREEN_BASE_ASSET" `
+            -PatchInstallerPath "installers\$env:DIASCREEN_PATCH_ASSET"
 
       - name: Compile project and run On-line Simulation
         # Windows PowerShell 5.1 - the same host the script is tested with
@@ -52,7 +61,7 @@ jobs:
         env:
           # Encryption password of the .dpa - never logged.
           PROJECT_PASSWORD: ${{ secrets.PROJECT_PASSWORD }}
-        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS
+        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS -ExpectedVersion $env:DIASCREEN_VERSION
 
       - name: Upload reports, logs and screenshots
         if: always()

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-25 (2)
+
+### Naprawione
+- CI: instalacja kończyła się bez efektu - `DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe`
+  to łatka ("DIAScreen 1.8.1.19 Patch") na istniejące DIAScreen 1.8, nie
+  pełny instalator. Teraz najpierw instalowana jest baza
+  `DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe` (1.8.0.12, dodana do
+  Release `Installers`), potem łatka.
+- Baza to wrapper NSIS wokół layoutu InstallShield - rozpakowywana 7-Zipem,
+  launcher `DIAScreen 1.8.exe` uruchamiany cicho (`/s /v"/qn"`), logi MSI i
+  launchera (`/debuglog`) w raportach.
+- Test sprawdza wersję `DIAScreen.exe` (`-ExpectedVersion`, w CI
+  `DIASCREEN_VERSION` = 1.8.1.19) - czy łatka się nałożyła.
+
 ## 2026-09-25
 
 ### Dodane

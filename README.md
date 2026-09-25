@@ -3,7 +3,8 @@
 Projekt HMI DIAScreen (`PilaJednosuportowaINNER.dpa`, panel **PAC AX-8**)
 wraz z pipeline'em CI, który automatycznie:
 
-1. instaluje DIAScreen 1.8.1.19 na czystym runnerze,
+1. instaluje na czystym runnerze DIAScreen 1.8 (baza), a na nią łatkę
+   1.8.1.19,
 2. otwiera projekt (hasło z sekretu `PROJECT_PASSWORD`) i robi **Compile** -
    test przechodzi przy `Find 0 error(s)!` + `Compilation successful`,
 3. uruchamia **On-line Simulation** i przez **30 s** sprawdza, czy emulator
@@ -38,7 +39,7 @@ raporcie.
 
 ```
 windows-latest (hostowany runner GitHub Actions, świeża VM per job, sesja interaktywna)
-├── DIAScreen 1.8.1.19 (z GitHub Release "Installers")
+├── DIAScreen 1.8.0.12 + łatka 1.8.1.19 (z GitHub Release "Installers")
 └── PAC AX-8 Emulator (HMIApp.exe, On-line Simulation)
 ```
 
@@ -50,7 +51,7 @@ installers/README.md                   - skąd bierze się instalator (GitHub Re
 scripts/
   DiaScreenWin32.ps1                   - helpery Win32 (okna, dialogi, WM_COMMAND, Output, zrzuty ekranu)
   Invoke-DiaScreenTest.ps1             - cały test: otwarcie + Compile + On-line Simulation 30 s
-  Install-DIAScreen.ps1                - cicha instalacja DIAScreen (InstallShield /s /v"/qn")
+  Install-DIAScreen.ps1                - cicha instalacja DIAScreen: baza 1.8 (NSIS -> 7-Zip -> InstallShield) + łatka 1.8.1
   Start-SilentInstall.ps1              - uruchomienie instalatora z twardym timeoutem
   Write-Summary.ps1                    - raport Markdown (GitHub Job Summary)
 .github/workflows/diascreen-ci.yml     - workflow GitHub Actions (1 job)
@@ -66,7 +67,8 @@ work/                                  - katalog roboczy z kopią projektu (git-
 - `simulation-samples.log` - próbki co 1 s z obserwacji emulatora,
 - `01-project-opened.png` ... `04-simulation-end.png` - zrzuty ekranu etapów
   (oraz `failure-*.png` / `*-dialog-*.png` przy problemach),
-- `diascreen-install.log` - log MSI instalacji (tylko CI).
+- `diascreen-install-{base,patch}.log` / `diascreen-setup-{base,patch}.log` -
+  logi MSI i launchera InstallShield (tylko CI).
 
 Ostatni krok workflow ([`Write-Summary.ps1`](scripts/Write-Summary.ps1))
 składa raporty JUnit w **Job Summary** przebiegu; wszystko powyżej jest w
@@ -98,14 +100,18 @@ co sam uruchomił (DIAScreen otwarty wcześniej przez użytkownika zostaje).
 Emulator nie może już działać (wtedy test od razu kończy się błędem).
 `-KeepRunning` zostawia DIAScreen i emulator otwarte.
 
-## GitHub Release - instalator
+## GitHub Release - instalatory
 
-Instalator (~224 MB) jest za duży na commit (limit 100 MB), więc leży jako
-asset GitHub Release w tym repo:
+Instalatory są za duże na commit (limit 100 MB), więc leżą jako assety
+GitHub Release w tym repo:
 
-| Release (tag) | Asset                                          |
-|---------------|------------------------------------------------|
-| `Installers`  | `DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe`  |
+| Release (tag) | Asset                                          | Co                                   |
+|---------------|------------------------------------------------|--------------------------------------|
+| `Installers`  | `DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe`  | DIAScreen 1.8.0.12 - baza (~1,7 GB)  |
+| `Installers`  | `DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe`  | DIAScreen 1.8.1.19 - łatka na 1.8    |
+
+Kolejność ma znaczenie: łatka 1.8.1 bez zainstalowanej bazy 1.8 nic nie
+robi.
 
 Szczegóły: [`installers/README.md`](installers/README.md).
 
