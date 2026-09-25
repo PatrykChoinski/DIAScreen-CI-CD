@@ -56,8 +56,11 @@ function Get-ProcessTree([int]$RootId) {
 
 function Write-InstallerState([int]$RootId, [string]$Tag) {
     $tree = @(Get-ProcessTree $RootId)
-    # msiexec does the actual work in its own (service-launched) processes.
-    $tree += @(Get-CimInstance Win32_Process -Filter "Name='msiexec.exe'" -ErrorAction SilentlyContinue | Where-Object { $tree.ProcessId -notcontains $_.ProcessId })
+    # msiexec does the actual work in its own (service-launched) processes,
+    # and custom actions start their tools (e.g. DPInst) under those.
+    foreach ($m in @(Get-CimInstance Win32_Process -Filter "Name='msiexec.exe'" -ErrorAction SilentlyContinue)) {
+        $tree += @(Get-ProcessTree $m.ProcessId | Where-Object { $tree.ProcessId -notcontains $_.ProcessId })
+    }
     foreach ($p in $tree) {
         Log ("  pid {0} (parent {1}) {2}" -f $p.ProcessId, $p.ParentProcessId, $(if ($p.CommandLine) { $p.CommandLine } else { $p.Name }))
         foreach ($h in [DiaWin32]::TopWindows([uint32]$p.ProcessId)) {
@@ -117,6 +120,26 @@ $layout = $setupIni.DirectoryName
 $msi = Get-ChildItem -Path $layout -Filter "DIAScreen*.msi" -File | Select-Object -First 1
 if (-not $msi) { throw "No DIAScreen*.msi in $layout." }
 Log ("Unpacked base installer in {0:0} s -> {1}" -f $sw.Elapsed.TotalSeconds, $msi.FullName)
+
+# The MSI's InstallUSBDriver custom action runs DPInst for the bundled
+# drivers (Delta HMI USB, virtual serial, TAP). Their catalogs are properly
+# signed, but Windows still asks "Would you like to install this device
+# software?" for a publisher that is not in TrustedPublisher - on the
+# secure desktop, invisible and unanswerable on CI, so msiexec /qn hangs
+# forever. Trusting the catalogs' signers up front skips that prompt.
+$store = New-Object System.Security.Cryptography.X509Certificates.X509Store("TrustedPublisher", "LocalMachine")
+$store.Open("ReadWrite")
+try {
+    $signers = @{}
+    foreach ($cat in Get-ChildItem -Path $layout -Recurse -Filter *.cat -File) {
+        $cert = (Get-AuthenticodeSignature $cat.FullName).SignerCertificate
+        if ($cert -and -not $signers.ContainsKey($cert.Thumbprint)) { $signers[$cert.Thumbprint] = $cert }
+    }
+    foreach ($cert in $signers.Values) {
+        $store.Add($cert)
+        Log "Trusted driver publisher: $($cert.Subject.Split(',')[0]) ($($cert.Thumbprint))"
+    }
+} finally { $store.Close() }
 
 $vc2013 = Get-ChildItem -Path (Join-Path $layout "ISSetupPrerequisites") -Recurse -Filter "vcredist_x86_12*.exe" -File -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($vc2013) {

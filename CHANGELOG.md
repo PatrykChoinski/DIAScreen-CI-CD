@@ -12,6 +12,11 @@
   a `DIAScreen 1.8.msi` instalowane bezpośrednio przez `msiexec /qn`
   (launcher `DIAScreen 1.8.exe /s` wisiał na CI > 20 min). Z
   prerekwizytów launchera doinstalowywany tylko VC++ 2013 x86.
+- `msiexec /qn` wisiał w akcji `InstallUSBDriver` - DPInst instalujący
+  sterowniki (Delta HMI USB, wirtualny port szeregowy, TAP) czekał na monit
+  "Czy chcesz zainstalować to oprogramowanie urządzenia?" (bezpieczny
+  pulpit, niewidoczny na CI). Przed instalacją certyfikaty sygnatariuszy
+  katalogów `*.cat` z paczki są dodawane do `LocalMachine\TrustedPublisher`.
 - Każdy instalator działa pod watchdogiem: co minutę lista okien/dialogów
   drzewa procesów instalatora + zrzut ekranu (`install-*.png`), po
   timeoucie (15 min) drzewo procesów jest zabijane.
