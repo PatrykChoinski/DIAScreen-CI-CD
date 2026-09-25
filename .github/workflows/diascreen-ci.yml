@@ -1,0 +1,81 @@
+name: DIAScreen CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  checks: write        # dorny/test-reporter publishes a check run
+
+env:
+  # Bump together when the installer changes: the asset name must match
+  # what is uploaded to the "Installers" GitHub Release exactly (see
+  # installers/README.md).
+  DIASCREEN_VERSION: "1.8.1.19"
+  INSTALLERS_RELEASE_TAG: "Installers"
+  DIASCREEN_INSTALLER_ASSET: "DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe"
+  # How long the On-line Simulation must keep running (emulator alive and
+  # responsive) for the smoke test to pass.
+  OBSERVE_SECONDS: "30"
+
+jobs:
+  build-simulate:
+    # Hosted, ephemeral runner - a fresh VM per job with an interactive
+    # desktop session, which DIAScreen (a GUI-only MFC application) needs.
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download DIAScreen installer
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          New-Item -ItemType Directory -Force -Path installers | Out-Null
+          gh release download "$env:INSTALLERS_RELEASE_TAG" --repo "${{ github.repository }}" `
+            --pattern "$env:DIASCREEN_INSTALLER_ASSET" --dir installers --clobber
+
+      - name: Install DIAScreen
+        shell: pwsh
+        run: ./scripts/Install-DIAScreen.ps1 -InstallerPath "installers\$env:DIASCREEN_INSTALLER_ASSET"
+
+      - name: Compile project and run On-line Simulation
+        # Windows PowerShell 5.1 - the same host the script is tested with
+        # locally (its Add-Type Win32 helpers target .NET Framework).
+        shell: powershell
+        env:
+          # Encryption password of the .dpa - never logged.
+          PROJECT_PASSWORD: ${{ secrets.PROJECT_PASSWORD }}
+        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS
+
+      - name: Upload reports, logs and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diascreen-ci-reports
+          path: |
+            reports/*.xml
+            reports/*.log
+            reports/*.png
+          if-no-files-found: warn
+
+      - name: Publish test summary
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: DIAScreen tests
+          path: reports/junit-*.xml
+          reporter: java-junit
+          fail-on-error: true
+          fail-on-empty: false
+
+      - name: Write consolidated report
+        if: always()
+        shell: pwsh
+        run: ./scripts/Write-Summary.ps1

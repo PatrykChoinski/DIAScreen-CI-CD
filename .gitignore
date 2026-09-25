@@ -1,0 +1,13 @@
+# DIAScreen installer (uploaded to the GitHub Release "Installers")
+installers/*
+!installers/README.md
+
+# CI artifacts
+/reports/*
+!/reports/.gitkeep
+/work/
+*.log
+
+# DIAScreen backup / temporary files next to the project
+*.bak
+*.~dpa
