@@ -11,9 +11,10 @@
     ISSetupPrerequisites\...). The wrapper and the InstallShield launcher
     are both interactive (the launcher's /s hangs on CI), so the layout is
     unpacked with 7-Zip and the MSI is installed with msiexec directly. Of
-    the launcher's prerequisites only VC++ 2013 is installed - the hosted
-    runner already has .NET 4.8 and VC++ 2015-2022; CodeMeter,
-    GeneralPackage, DIAStudioTool are not needed to compile/simulate.
+    the launcher's prerequisites only VC++ 2013 and CodeMeter Runtime
+    (DIAScreen will not start without it) are installed - the hosted
+    runner already has .NET 4.8 and VC++ 2015-2022; GeneralPackage and
+    DIAStudioTool are not needed to compile/simulate.
 
     Patch: an InstallShield launcher, run with /s /v"/qn".
 
@@ -165,6 +166,18 @@ if ($vc2013) {
     # 1638 = a newer/same version is already installed.
     Invoke-Installer -Name "vcredist2013-x86" -FilePath $vc2013.FullName -Arguments "/install /quiet /norestart" -Minutes 5 -SuccessCodes @(0, 1638, 3010)
 }
+
+# DIAScreen refuses to start without CodeMeter ("CodeMeter component can't
+# be started properly"). Same silent switch as in Diadesigner-AX-CI-CD.
+if (-not (Get-Service -Name "CodeMeter.exe" -ErrorAction SilentlyContinue)) {
+    $cm = Get-ChildItem -Path (Join-Path $layout "ISSetupPrerequisites") -Recurse -Filter "CodeMeterRuntime*.exe" -File -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $cm) { throw "CodeMeterRuntime*.exe not found in $layout\ISSetupPrerequisites." }
+    Invoke-Installer -Name "codemeter" -FilePath $cm.FullName -Arguments '/ComponentArgs "*":"/qn /norestart"' -Minutes 10
+}
+$cmService = Get-Service -Name "CodeMeter.exe" -ErrorAction SilentlyContinue
+if (-not $cmService) { throw "CodeMeter service (CodeMeter.exe) is missing after installing CodeMeter Runtime." }
+if ($cmService.Status -ne 'Running') { Start-Service -Name "CodeMeter.exe" }
+Log "CodeMeter service: $((Get-Service -Name 'CodeMeter.exe').Status)"
 
 $baseLog = Join-Path $LogDir "diascreen-install-base.log"
 $mst = Join-Path $layout "1033.mst"

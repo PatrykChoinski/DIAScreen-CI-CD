@@ -23,6 +23,10 @@
 - Baza instalowana do `INSTALLDIR=...\DIAStudio\DIAScreen 1.8` (jak przy
   instalacji interaktywnej; domyślny katalog MSI przy `/qn` to sam
   `DIAStudio\`).
+- DIAScreen na świeżej maszynie nie startował ("CodeMeter component can't
+  be started properly") - doinstalowywany CodeMeter Runtime 8.40d z
+  prerekwizytów paczki (`/ComponentArgs "*":"/qn /norestart"`) i
+  sprawdzana usługa `CodeMeter.exe`.
 - Każdy instalator działa pod watchdogiem: co minutę lista okien/dialogów
   drzewa procesów instalatora + zrzut ekranu (`install-*.png`), po
   timeoucie (15 min) drzewo procesów jest zabijane.

@@ -28,11 +28,21 @@ publicznym repo są publicznie pobieralne.
    layoutu InstallShield (`DIAScreen 1.8.exe`, `DIAScreen 1.8.msi`,
    `Setup.ini`, `ISSetupPrerequisites\...` - VC++, .NET 4.7.2, CodeMeter,
    GeneralPackage, DIAStudioTool). Normalnie rozpakowuje się do
-   `%TEMP%\DIAScreen` i startuje interaktywnie; w CI rozpakowujemy go 7-Zipem
-   do `work\diascreen-base` i uruchamiamy launcher InstallShield cicho:
+   `%TEMP%\DIAScreen` i startuje interaktywnie. Launcher InstallShield z
+   `/s` wisi na CI, więc w CI rozpakowujemy go 7-Zipem do
+   `work\diascreen-base` i:
+
+   - dodajemy sygnatariuszy katalogów sterowników (`*.cat`) do
+     `LocalMachine\TrustedPublisher` - inaczej akcja `InstallUSBDriver`
+     (DPInst) czeka na niewidoczny monit "zainstalować oprogramowanie
+     urządzenia?",
+   - instalujemy prerekwizyty VC++ 2013 x86 (`/install /quiet /norestart`) i
+     CodeMeter Runtime (`/ComponentArgs "*":"/qn /norestart"`) - bez
+     CodeMeter DIAScreen nie startuje,
+   - instalujemy MSI bezpośrednio:
 
    ```
-   "DIAScreen 1.8.exe" /s /debuglog"reports\diascreen-setup-base.log" /v"/qn /norestart /l*v reports\diascreen-install-base.log"
+   msiexec /i "DIAScreen 1.8.msi" TRANSFORMS="1033.mst" INSTALLDIR="C:\Program Files (x86)\Delta Industrial Automation\DIAStudio\DIAScreen 1.8" SETUPEXEDIR=<layout> REBOOT=ReallySuppress /qn /l*v reports\diascreen-install-base.log
    ```
 
 2. **Łatka 1.8.1** - launcher InstallShield, te same parametry
