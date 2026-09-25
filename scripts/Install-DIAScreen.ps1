@@ -88,6 +88,25 @@ function Invoke-Installer {
     }
     Log ("[{0}] exit code {1} after {2:0} s" -f $Name, $proc.ExitCode, $sw.Elapsed.TotalSeconds)
     if ($SuccessCodes -notcontains $proc.ExitCode) { throw "[$Name] failed with exit code $($proc.ExitCode)." }
+
+    # An InstallShield launcher "relaunches setup from temp" (a copy of
+    # itself under %TEMP%\{GUID}, started without waiting) and exits right
+    # away - the real work happens in that copy, so wait for it too.
+    $exeName = [IO.Path]::GetFileNameWithoutExtension($FilePath)
+    if ($exeName -ne 'msiexec') {
+        $deadline = $sw.Elapsed.TotalMinutes + $Minutes
+        while ($copies = @(Get-Process -Name $exeName -ErrorAction SilentlyContinue)) {
+            if ($sw.Elapsed.TotalMinutes -ge $deadline) {
+                $copies | ForEach-Object { Get-ProcessTree $_.Id | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } }
+                throw "[$Name] relaunched setup did not finish within $Minutes min."
+            }
+            $minute++
+            Log "[$Name] relaunched copy still running (pid $($copies.Id -join ', ')):"
+            Write-InstallerState $copies[0].Id "$Name-$minute"
+            $null = $copies[0].WaitForExit(60000)
+        }
+        Log ("[{0}] relaunched setup done after {1:0} s" -f $Name, $sw.Elapsed.TotalSeconds)
+    }
 }
 
 function Wait-MsiIdle {
@@ -149,7 +168,12 @@ if ($vc2013) {
 
 $baseLog = Join-Path $LogDir "diascreen-install-base.log"
 $mst = Join-Path $layout "1033.mst"
-$props = "SETUPEXEDIR=`"$layout`" REBOOT=ReallySuppress"
+# INSTALLDIR as the interactive setup picks it (its UI sequence, skipped by
+# /qn, appends "DIAScreen 1.8"; the MSI default is the DIAStudio folder).
+# No trailing backslash: '\"' would escape the closing quote on the msiexec
+# command line (MSI appends the backslash to directory properties itself).
+$installDir = "${env:ProgramFiles(x86)}\Delta Industrial Automation\DIAStudio\DIAScreen 1.8"
+$props = "INSTALLDIR=`"$installDir`" SETUPEXEDIR=`"$layout`" REBOOT=ReallySuppress"
 if (Test-Path $mst) { $props = "TRANSFORMS=`"$mst`" $props" }
 Invoke-Installer -Name "base" -FilePath "msiexec.exe" -Arguments "/i `"$($msi.FullName)`" $props /qn /norestart /l*v `"$baseLog`""
 Show-MsiResult $baseLog

@@ -17,6 +17,12 @@
   "Czy chcesz zainstalować to oprogramowanie urządzenia?" (bezpieczny
   pulpit, niewidoczny na CI). Przed instalacją certyfikaty sygnatariuszy
   katalogów `*.cat` z paczki są dodawane do `LocalMachine\TrustedPublisher`.
+- Łatka "znikała" po 4 s bez efektu - launcher InstallShield uruchamia
+  swoją kopię z `%TEMP%` bez czekania i od razu kończy się kodem 0; teraz
+  czekamy także na tę kopię.
+- Baza instalowana do `INSTALLDIR=...\DIAStudio\DIAScreen 1.8` (jak przy
+  instalacji interaktywnej; domyślny katalog MSI przy `/qn` to sam
+  `DIAStudio\`).
 - Każdy instalator działa pod watchdogiem: co minutę lista okien/dialogów
   drzewa procesów instalatora + zrzut ekranu (`install-*.png`), po
   timeoucie (15 min) drzewo procesów jest zabijane.
