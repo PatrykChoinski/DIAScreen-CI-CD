@@ -164,6 +164,21 @@ try {
                 Start-Sleep -Seconds 2
                 continue
             }
+            if ($desc -match 'is not yet supported\. Do you want to enable .*Update Manager') {
+                # A fresh install only has the series packages shipped with
+                # the installer; newer ones (e.g. AX-8(Windows) 1.0142.5)
+                # come from the online Update Manager. Decline and go on -
+                # compile/simulation must work with what is installed.
+                $no = Find-DialogButton $d @('No')
+                if ($no -ne [IntPtr]::Zero -and -not $seenDialogs.ContainsKey("answered-$d")) {
+                    $seenDialogs["answered-$d"] = Get-Date
+                    Log "WARNING: $desc -> answering 'No'"
+                    Save-Screenshot "open-update-manager-prompt"
+                    [DiaWin32]::Click($no)
+                    Start-Sleep -Seconds 2
+                    continue
+                }
+            }
             $key = "$d"
             if (-not $seenDialogs.ContainsKey($key)) {
                 $seenDialogs[$key] = Get-Date
