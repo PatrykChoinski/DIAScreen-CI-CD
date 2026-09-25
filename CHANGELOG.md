@@ -27,6 +27,15 @@
   be started properly") - doinstalowywany CodeMeter Runtime 8.40d z
   prerekwizytów paczki (`/ComponentArgs "*":"/qn /norestart"`) i
   sprawdzana usługa `CodeMeter.exe`.
+- Projekt nie otwierał się na świeżej instalacji ("AX-8(Windows) series is
+  not yet supported ... Update Manager") - pakiet serii AX-8(Windows)
+  1.0142.5, normalnie pobierany przez Update Manager, dodany do Release
+  `Installers` (`DIAScreen-Panel-AX-8-Windows_1.0142.5.zip`) i instalowany
+  przez `Install-PanelPackage.ps1` (`ProgramData\...\HMI\Panel` + wpis w
+  `DOPSoft.ini`). Test odpowiada "No" na ten monit (parametr
+  `-UpdateManagerAnswer`), gdyby pakietu zabrakło.
+- Po instalacji zapisywany manifest plików (`installed-files.txt`) i
+  eksport kluczy rejestru Delta - do porównania z działającą maszyną.
 - Każdy instalator działa pod watchdogiem: co minutę lista okien/dialogów
   drzewa procesów instalatora + zrzut ekranu (`install-*.png`), po
   timeoucie (15 min) drzewo procesów jest zabijane.

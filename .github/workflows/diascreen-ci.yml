@@ -21,6 +21,9 @@ env:
   INSTALLERS_RELEASE_TAG: "Installers"
   DIASCREEN_BASE_ASSET: "DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe"
   DIASCREEN_PATCH_ASSET: "DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe"
+  # HMI series package of the project's panel (normally downloaded by
+  # DIAScreen's online Update Manager) - see installers/README.md.
+  PANEL_PACKAGE_ASSET: "DIAScreen-Panel-AX-8-Windows_1.0142.5.zip"
   # How long the On-line Simulation must keep running (emulator alive and
   # responsive) for the smoke test to pass.
   OBSERVE_SECONDS: "30"
@@ -35,13 +38,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download DIAScreen installers (1.8 base + 1.8.1 patch)
+      - name: Download DIAScreen installers (1.8 base + 1.8.1 patch + AX-8 panel package)
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           New-Item -ItemType Directory -Force -Path installers | Out-Null
-          foreach ($asset in $env:DIASCREEN_BASE_ASSET, $env:DIASCREEN_PATCH_ASSET) {
+          foreach ($asset in $env:DIASCREEN_BASE_ASSET, $env:DIASCREEN_PATCH_ASSET, $env:PANEL_PACKAGE_ASSET) {
             gh release download "$env:INSTALLERS_RELEASE_TAG" --repo "${{ github.repository }}" `
               --pattern "$asset" --dir installers --clobber
             if ($LASTEXITCODE -ne 0) { throw "Download of $asset failed" }
@@ -55,6 +58,10 @@ jobs:
             -BaseInstallerPath "installers\$env:DIASCREEN_BASE_ASSET" `
             -PatchInstallerPath "installers\$env:DIASCREEN_PATCH_ASSET"
 
+      - name: Install AX-8(Windows) HMI series package
+        shell: powershell
+        run: ./scripts/Install-PanelPackage.ps1 -ZipPath "installers\$env:PANEL_PACKAGE_ASSET"
+
       - name: Compile project and run On-line Simulation
         # Windows PowerShell 5.1 - the same host the script is tested with
         # locally (its Add-Type Win32 helpers target .NET Framework).
@@ -62,7 +69,7 @@ jobs:
         env:
           # Encryption password of the .dpa - never logged.
           PROJECT_PASSWORD: ${{ secrets.PROJECT_PASSWORD }}
-        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS -ExpectedVersion $env:DIASCREEN_VERSION -UpdateManagerAnswer Yes
+        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS -ExpectedVersion $env:DIASCREEN_VERSION
 
       - name: Upload reports, logs and screenshots
         if: always()

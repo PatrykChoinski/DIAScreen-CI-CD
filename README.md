@@ -52,6 +52,7 @@ scripts/
   DiaScreenWin32.ps1                   - helpery Win32 (okna, dialogi, WM_COMMAND, Output, zrzuty ekranu)
   Invoke-DiaScreenTest.ps1             - cały test: otwarcie + Compile + On-line Simulation 30 s
   Install-DIAScreen.ps1                - cicha instalacja DIAScreen: baza 1.8 (NSIS -> 7-Zip -> InstallShield) + łatka 1.8.1
+  Install-PanelPackage.ps1             - pakiet serii HMI AX-8(Windows) (zamiast online Update Managera)
   Write-Summary.ps1                    - raport Markdown (GitHub Job Summary)
 .github/workflows/diascreen-ci.yml     - workflow GitHub Actions (1 job)
 reports/                               - raporty JUnit, logi, zrzuty ekranu (git-ignored)
@@ -108,6 +109,7 @@ GitHub Release w tym repo:
 |---------------|------------------------------------------------|--------------------------------------|
 | `Installers`  | `DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe`  | DIAScreen 1.8.0.12 - baza (~1,7 GB)  |
 | `Installers`  | `DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe`  | DIAScreen 1.8.1.19 - łatka na 1.8    |
+| `Installers`  | `DIAScreen-Panel-AX-8-Windows_1.0142.5.zip`    | pakiet serii AX-8(Windows) 1.0142.5  |
 
 Kolejność ma znaczenie: łatka 1.8.1 bez zainstalowanej bazy 1.8 nic nie
 robi.

@@ -14,6 +14,8 @@ repozytorium, tag **`Installers`**. Workflow ściąga je przez
 | `DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe`  | DIAScreen 1.8.0.12 - pełna instalacja (baza) | ~1,7 GB  |
 | `DELTA_IA-OSW_DIAScreen_V1.8.1_SW_202607.exe`  | DIAScreen 1.8.1.19 **Patch** - tylko łatka na istniejące 1.8 | ~224 MB |
 
+| `DIAScreen-Panel-AX-8-Windows_1.0142.5.zip`   | pakiet serii HMI AX-8(Windows) 1.0142.5 (z Update Managera) | ~58 MB |
+
 Łatka 1.8.1 sama niczego nie instaluje (na czystej maszynie kończy się bez
 efektu), dlatego najpierw instalowana jest baza 1.8, potem łatka.
 
@@ -46,7 +48,27 @@ publicznym repo są publicznie pobieralne.
    ```
 
 2. **Łatka 1.8.1** - launcher InstallShield, te same parametry
-   (logi `diascreen-*-patch.log`).
+   (logi `diascreen-*-patch.log`). Launcher uruchamia swoją kopię z
+   `%TEMP%` i od razu kończy się kodem 0 - skrypt czeka też na tę kopię.
+
+3. **Pakiet serii AX-8(Windows)** ([`scripts/Install-PanelPackage.ps1`](../scripts/Install-PanelPackage.ps1)).
+   Instalator dostarcza tylko pakiet DOP-100; pakiety pozostałych serii
+   pobiera z sieci wbudowany **Update Manager** DIAScreen. Bez pakietu
+   serii projektu otwarcie `.dpa` kończy się pytaniem "AX-8(Windows) series
+   is not yet supported. Do you want to enable Update Manager..." i projekt
+   się nie otwiera. Update Manager instaluje serię jako:
+
+   - `C:\ProgramData\Delta Industrial Automation\HMI\Panel\AX-8-Windows_1.0142.5\`
+     (`PanelInfo.ini` + `PAC_AX.bin`),
+   - wpis `[ENVIRONMENT] AX-8(Windows) series=1.0142.5` w
+     `C:\ProgramData\Delta Industrial Automation\DIAStudio\DIAScreen 1.8\DOPSoft.ini`.
+
+   Zip w Release to ten katalog skopiowany z maszyny, na której Update
+   Manager go zainstalował; skrypt odtwarza oba elementy.
+   Nowa wersja pakietu: spakuj katalog (`Compress-Archive -Path
+   "C:\ProgramData\Delta Industrial Automation\HMI\Panel\AX-8-Windows_<wersja>"
+   -DestinationPath DIAScreen-Panel-AX-8-Windows_<wersja>.zip`), wgraj do
+   Release `Installers` i zmień `PANEL_PACKAGE_ASSET` w workflow.
 
 Na końcu skrypt sprawdza wpis w Uninstall (`DIAScreen*`) i
 `DIAScreen.exe` w `InstallLocation` (domyślnie

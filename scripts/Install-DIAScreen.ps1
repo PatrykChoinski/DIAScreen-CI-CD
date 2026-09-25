@@ -215,7 +215,7 @@ if ($env:GITHUB_ENV) { "DIASCREEN_EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV
 # Manifest of what got installed (path, size, file version) - to compare
 # against a machine where DIAScreen works (e.g. which series packages the
 # online Update Manager added there).
-$manifest = foreach ($root in $entry.InstallLocation, "$env:ProgramData\Delta Industrial Automation\DIAStudio\DIAScreen 1.8") {
+$manifest = foreach ($root in $entry.InstallLocation, "$env:ProgramData\Delta Industrial Automation\DIAStudio\DIAScreen 1.8", "$env:ProgramData\Delta Industrial Automation\HMI") {
     if (-not (Test-Path $root)) { continue }
     Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
         "{0}`t{1}`t{2}" -f $_.FullName.Substring($root.Length).TrimStart('\'), $_.Length, $_.VersionInfo.FileVersion
