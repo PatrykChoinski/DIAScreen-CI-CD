@@ -9,8 +9,12 @@
   `DELTA_IA-OSW_DIAScreen_V1.8.0_SW_202606.exe` (1.8.0.12, dodana do
   Release `Installers`), potem łatka.
 - Baza to wrapper NSIS wokół layoutu InstallShield - rozpakowywana 7-Zipem,
-  launcher `DIAScreen 1.8.exe` uruchamiany cicho (`/s /v"/qn"`), logi MSI i
-  launchera (`/debuglog`) w raportach.
+  a `DIAScreen 1.8.msi` instalowane bezpośrednio przez `msiexec /qn`
+  (launcher `DIAScreen 1.8.exe /s` wisiał na CI > 20 min). Z
+  prerekwizytów launchera doinstalowywany tylko VC++ 2013 x86.
+- Każdy instalator działa pod watchdogiem: co minutę lista okien/dialogów
+  drzewa procesów instalatora + zrzut ekranu (`install-*.png`), po
+  timeoucie (15 min) drzewo procesów jest zabijane.
 - Test sprawdza wersję `DIAScreen.exe` (`-ExpectedVersion`, w CI
   `DIASCREEN_VERSION` = 1.8.1.19) - czy łatka się nałożyła.
 

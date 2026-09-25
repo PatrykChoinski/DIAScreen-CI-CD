@@ -48,7 +48,8 @@ jobs:
           }
 
       - name: Install DIAScreen 1.8 + 1.8.1 patch
-        shell: pwsh
+        # Windows PowerShell 5.1 - uses the Win32 helpers for its watchdog.
+        shell: powershell
         run: |
           ./scripts/Install-DIAScreen.ps1 `
             -BaseInstallerPath "installers\$env:DIASCREEN_BASE_ASSET" `

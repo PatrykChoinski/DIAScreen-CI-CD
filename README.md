@@ -52,7 +52,6 @@ scripts/
   DiaScreenWin32.ps1                   - helpery Win32 (okna, dialogi, WM_COMMAND, Output, zrzuty ekranu)
   Invoke-DiaScreenTest.ps1             - cały test: otwarcie + Compile + On-line Simulation 30 s
   Install-DIAScreen.ps1                - cicha instalacja DIAScreen: baza 1.8 (NSIS -> 7-Zip -> InstallShield) + łatka 1.8.1
-  Start-SilentInstall.ps1              - uruchomienie instalatora z twardym timeoutem
   Write-Summary.ps1                    - raport Markdown (GitHub Job Summary)
 .github/workflows/diascreen-ci.yml     - workflow GitHub Actions (1 job)
 reports/                               - raporty JUnit, logi, zrzuty ekranu (git-ignored)
