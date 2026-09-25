@@ -59,6 +59,10 @@ public static class DiaWin32 {
     public static void Command(IntPtr frame, int id) { PostMessage(frame, WM_COMMAND, (IntPtr)id, IntPtr.Zero); }
     public static void SetText(IntPtr h, string text) { SendMessage(h, WM_SETTEXT, IntPtr.Zero, text); }
     public static void Click(IntPtr button) { PostMessage(button, BM_CLICK, IntPtr.Zero, IntPtr.Zero); }
+    public static void PressEnter(IntPtr window) {
+        PostMessage(window, 0x0100 /* WM_KEYDOWN */, (IntPtr)0x0D, (IntPtr)0x001C0001);
+        PostMessage(window, 0x0101 /* WM_KEYUP */, (IntPtr)0x0D, unchecked((IntPtr)(int)0xC01C0001));
+    }
 
     public static int ListViewCount(IntPtr lv) {
         return (int)SendMessage(lv, 0x1004 /* LVM_GETITEMCOUNT */, IntPtr.Zero, IntPtr.Zero);
@@ -141,6 +145,28 @@ function Get-ProcessDialogs {
     # modal dialogs like "Disable Protection".
     param([int]$ProcessId)
     @([DiaWin32]::TopWindows($ProcessId) | Where-Object { [DiaWin32]::ClassOf($_) -eq '#32770' })
+}
+
+function Invoke-UiaButton {
+    # Press a button by name in a window that has no Win32 child controls
+    # (Qt dialogs) through UI Automation; falls back to Enter, which
+    # triggers the dialog's default button. Returns $true when invoked.
+    param([IntPtr]$Window, [string]$Name)
+    Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+    $AE = [System.Windows.Automation.AutomationElement]
+    try {
+        $root = $AE::FromHandle($Window)
+        $cond = New-Object System.Windows.Automation.AndCondition(
+            (New-Object System.Windows.Automation.PropertyCondition($AE::ControlTypeProperty, [System.Windows.Automation.ControlType]::Button)),
+            (New-Object System.Windows.Automation.PropertyCondition($AE::NameProperty, $Name)))
+        $btn = $root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $cond)
+        if ($btn) {
+            $btn.GetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern).Invoke()
+            return $true
+        }
+    } catch { }
+    [DiaWin32]::PressEnter($Window)
+    return $false
 }
 
 function Find-DialogButton {

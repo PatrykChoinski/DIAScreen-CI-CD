@@ -34,6 +34,9 @@
   przez `Install-PanelPackage.ps1` (`ProgramData\...\HMI\Panel` + wpis w
   `DOPSoft.ini`). Test odpowiada "No" na ten monit (parametr
   `-UpdateManagerAnswer`), gdyby pakietu zabrakło.
+- On-line Simulation na świeżej maszynie zatrzymywała się na dialogu Qt
+  "COM Port Setting" z HMIManager (mapowanie COM HMI -> PC, "Ask me every
+  time") - test zatwierdza go (OK przez UI Automation, awaryjnie Enter).
 - Po instalacji zapisywany manifest plików (`installed-files.txt`) i
   eksport kluczy rejestru Delta - do porównania z działającą maszyną.
 - Każdy instalator działa pod watchdogiem: co minutę lista okien/dialogów

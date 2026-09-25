@@ -299,8 +299,22 @@ try {
             }
         }
         if ($failure) { break }
-        $candidates = Get-Process -ErrorAction SilentlyContinue | Where-Object {
-            $_.Path -and $_.Path.StartsWith($emulatorDir, [StringComparison]::OrdinalIgnoreCase) -and $_.ProcessName -ne 'HMIManager' }
+        $emuProcs = @(Get-Process -ErrorAction SilentlyContinue | Where-Object {
+            $_.Path -and $_.Path.StartsWith($emulatorDir, [StringComparison]::OrdinalIgnoreCase) })
+        # HMIManager asks how to map the HMI's COM ports to the PC's ("COM
+        # Port Setting", "Ask me every time" - a Qt dialog). The defaults
+        # (COM1->COM1, ...) are fine: nothing is attached on the runner.
+        foreach ($p in $emuProcs) {
+            foreach ($w in [DiaWin32]::TopWindows($p.Id)) {
+                if ([DiaWin32]::Text($w) -ne 'COM Port Setting') { continue }
+                if ($seenDialogs.ContainsKey("com-$w") -and ((Get-Date) - $seenDialogs["com-$w"]).TotalSeconds -lt 5) { continue }
+                $seenDialogs["com-$w"] = Get-Date
+                Save-Screenshot "simulation-com-port-setting"
+                $how = if (Invoke-UiaButton $w 'OK') { "UI Automation" } else { "Enter" }
+                Log "COM Port Setting dialog ($($p.ProcessName) pid $($p.Id)) -> OK via $how"
+            }
+        }
+        $candidates = $emuProcs | Where-Object { $_.ProcessName -ne 'HMIManager' }
         foreach ($p in $candidates) {
             $w = [DiaWin32]::TopWindows($p.Id) | Where-Object { [DiaWin32]::Text($_) -match 'Emulator' } | Select-Object -First 1
             if ($w) { $emu = $p; $emuWindow = $w; break }
