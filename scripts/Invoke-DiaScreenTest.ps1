@@ -25,6 +25,8 @@ param(
     # Fail unless DIAScreen.exe has this product version (e.g. "1.8.1.19" -
     # proves the patch on top of the 1.8 base install was applied).
     [string]$ExpectedVersion = "",
+    # Answer to "<series> is not yet supported. Enable Update Manager?".
+    [ValidateSet('No', 'Yes')][string]$UpdateManagerAnswer = 'No',
     [int]$ObserveSeconds = 30,
     [int]$OpenTimeoutSeconds = 300,
     [int]$CompileTimeoutSeconds = 900,
@@ -169,12 +171,22 @@ try {
                 # the installer; newer ones (e.g. AX-8(Windows) 1.0142.5)
                 # come from the online Update Manager. Decline and go on -
                 # compile/simulation must work with what is installed.
-                $no = Find-DialogButton $d @('No')
-                if ($no -ne [IntPtr]::Zero -and -not $seenDialogs.ContainsKey("answered-$d")) {
+                $btn = Find-DialogButton $d @($UpdateManagerAnswer)
+                if ($btn -ne [IntPtr]::Zero -and -not $seenDialogs.ContainsKey("answered-$d")) {
                     $seenDialogs["answered-$d"] = Get-Date
-                    Log "WARNING: $desc -> answering 'No'"
+                    Log "WARNING: $desc -> answering '$UpdateManagerAnswer'"
                     Save-Screenshot "open-update-manager-prompt"
-                    [DiaWin32]::Click($no)
+                    [DiaWin32]::Click($btn)
+                    if ($UpdateManagerAnswer -eq 'Yes') {
+                        # Diagnostics: record what the Update Manager shows.
+                        for ($i = 1; $i -le 12; $i++) {
+                            Start-Sleep -Seconds 5
+                            Save-Screenshot "update-manager-$i"
+                            Get-Process | Where-Object { try { $_.StartTime -ge $startedAt -and $_.MainWindowHandle -ne 0 } catch { $false } } | ForEach-Object {
+                                foreach ($w in [DiaWin32]::TopWindows($_.Id)) { Log "  [$($_.ProcessName) $($_.Id)] $(Get-DialogDescription $w)" }
+                            }
+                        }
+                    }
                     Start-Sleep -Seconds 2
                     continue
                 }

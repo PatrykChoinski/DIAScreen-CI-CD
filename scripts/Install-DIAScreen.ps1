@@ -211,3 +211,16 @@ if (-not (Test-Path $exe)) { throw "DIAScreen.exe not found in $($entry.InstallL
 $fileVersion = (Get-Item $exe).VersionInfo.ProductVersion
 Log ("Installed {0} {1}, DIAScreen.exe {2} -> {3}" -f $entry.DisplayName, $entry.DisplayVersion, $fileVersion, $exe)
 if ($env:GITHUB_ENV) { "DIASCREEN_EXE=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8 }
+
+# Manifest of what got installed (path, size, file version) - to compare
+# against a machine where DIAScreen works (e.g. which series packages the
+# online Update Manager added there).
+$manifest = foreach ($root in $entry.InstallLocation, "$env:ProgramData\Delta Industrial Automation\DIAStudio\DIAScreen 1.8") {
+    if (-not (Test-Path $root)) { continue }
+    Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+        "{0}`t{1}`t{2}" -f $_.FullName.Substring($root.Length).TrimStart('\'), $_.Length, $_.VersionInfo.FileVersion
+    }
+}
+$manifest | Set-Content -Path (Join-Path $LogDir "installed-files.txt") -Encoding UTF8
+& reg.exe export "HKLM\SOFTWARE\WOW6432Node\Delta Industrial Automation" (Join-Path $LogDir "installed-registry.reg.txt") /y | Out-Null
+Log "Manifest: $($manifest.Count) files -> $LogDir\installed-files.txt"

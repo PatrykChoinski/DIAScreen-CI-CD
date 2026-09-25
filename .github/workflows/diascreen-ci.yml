@@ -62,7 +62,7 @@ jobs:
         env:
           # Encryption password of the .dpa - never logged.
           PROJECT_PASSWORD: ${{ secrets.PROJECT_PASSWORD }}
-        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS -ExpectedVersion $env:DIASCREEN_VERSION
+        run: ./scripts/Invoke-DiaScreenTest.ps1 -DiaScreenExe "$env:DIASCREEN_EXE" -ObserveSeconds $env:OBSERVE_SECONDS -ExpectedVersion $env:DIASCREEN_VERSION -UpdateManagerAnswer Yes
 
       - name: Upload reports, logs and screenshots
         if: always()
@@ -73,6 +73,7 @@ jobs:
             reports/*.xml
             reports/*.log
             reports/*.png
+            reports/*.txt
           if-no-files-found: warn
 
       - name: Publish test summary
